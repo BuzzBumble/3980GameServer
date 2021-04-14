@@ -8,3 +8,6 @@ OBJ=server.o gameserver.o game.o response.o
 
 server: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
+
+clean:
+	rm server *.o
