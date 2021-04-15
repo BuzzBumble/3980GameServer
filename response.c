@@ -8,3 +8,13 @@ int sendResponse(Response *res, int cfd) {
 
     return 0;
 }
+
+int parseIntoPayload(Response *res, u_int32_t value) {
+    uint8_t byte;
+    for (size_t i = res->plen -1; i >= 0; i--) {
+        byte = value & BYTE_MASK;
+        res->payload[i] = htons(byte);
+        value >>= 8;
+    }
+    return 0;
+}

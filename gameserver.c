@@ -213,9 +213,12 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
     res.type = RES_TYPE_SUCCESS;
     res.context = RES_SUCCESS_RULESET;
     res.plen = RES_PAYLOAD_PID_SIZE;
-    res.payload = req->cfd;
+    res.payload = malloc(sizeof(uint8_t) * res.plen);
+    parseIntoPayload(&res, req->cfd);
 
     sendResponse(&res, req->cfd);
+
+    free(res.payload);
 
     puts("Ruleset confirmation sent");
 

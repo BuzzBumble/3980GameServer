@@ -35,13 +35,17 @@
 #define RES_UPDATE_DC 4
 #define RES_SUCCESS_RULESET 1
 
+#define BYTE_MASK 0xff
+
 typedef struct {
     uint8_t type;
     uint8_t context;
     uint8_t plen;
-    uint32_t payload;
+    uint8_t *payload;
 } Response;
 
 int sendResponse(Response *res, int cfd);
+
+int parseIntoPayload(Response *res, u_int32_t value);
 
 #endif
