@@ -40,10 +40,9 @@ int main()
     uint8_t type = 1;
     uint8_t context = 1;
     uint8_t plen = 2;
-    uint32_t payload = 0x0101;
+    uint32_t payload = htonl(0x0102) >> 16;
 
     puts("writing data");
-
     write(sockfd, &cfd, sizeof(cfd));
     write(sockfd, &type, sizeof(type));
     write(sockfd, &context, sizeof(context));
@@ -68,7 +67,7 @@ int main()
     printf("Type: %d\n", type);
     printf("Context: %d\n", context);
     printf("Payload Length: %d\n", plen);
-    printf("Payload: %d\n", payload);
+    printf("Payload: %X\n", payload);
 
     for (;;) {}
 

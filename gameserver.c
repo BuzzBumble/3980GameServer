@@ -125,11 +125,13 @@ int GameServerHandleTCP(GameServer *gs, int cfd) {
     int n;
 
     n = read(cfd, &req.cfd, REQ_UID_SIZE);
+    req.cfd = ntohl(req.cfd);
     if (n <= 0) {
         printf("Closing socket %d\n", cfd);
         close(cfd);
         FD_CLR(cfd, &gs->m_rset);
         // TODO: Remove the client from its game
+        // and destroy game if it has no clients left
         return 0;
     }
     n = read(cfd, &req.type, REQ_TYPE_SIZE);
@@ -137,9 +139,7 @@ int GameServerHandleTCP(GameServer *gs, int cfd) {
     n = read(cfd, &req.plen, REQ_LEN_SIZE);
     if (req.plen > 0) {
         req.payload = malloc(sizeof(uint8_t) * req.plen);
-        for (size_t i = 0; i < req.plen; i++) {
-            n = read(cfd, &req.payload[i], 1);
-        }
+        n = read(cfd, req.payload, req.plen);
     }
 
     if (req.cfd == 0) {
@@ -190,6 +190,10 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
     Client *client = malloc(sizeof(Client));
 
     printf("Protocol Version: %d\n", version);
+    if (version != gs->ptcl_version) {
+        puts("Protocol version does not match");
+        return -1;
+    }
     int supported = 0;
     for (size_t i = 0; i < AllowedGameCount; i++) {
         if (AllowedGames[i] == game_type)
@@ -197,6 +201,7 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
     }
     if (!supported) {
         puts("Unsupported Game");
+        return -1;
     } else {
         puts("Creating client");
         client->fd = req->cfd;
@@ -214,11 +219,9 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
     res.context = RES_SUCCESS_RULESET;
     res.plen = RES_PAYLOAD_PID_SIZE;
     res.payload = malloc(sizeof(uint8_t) * res.plen);
+
     parseIntoPayload(&res, req->cfd);
-
     sendResponse(&res, req->cfd);
-
-    free(res.payload);
 
     puts("Ruleset confirmation sent");
 
