@@ -85,7 +85,7 @@ int GameServerLoop(GameServer *gs) {
 
 int GameServerAccept(GameServer *gs) {
     struct sockaddr cliaddr;
-    int len = sizeof(cliaddr);
+    socklen_t len = sizeof(cliaddr);
     int connfd;
 
     if ((connfd = accept(gs->tcpfd, (struct sockaddr *)&cliaddr, &len)) == -1) {
@@ -105,7 +105,7 @@ int GameServerAccept(GameServer *gs) {
 
 int GameServerHandleUDP(GameServer *gs) {
     struct sockaddr cliaddr;
-    int len = sizeof(cliaddr);
+    socklen_t len = sizeof(cliaddr);
     const char *hello_msg = "Hello UDP Client";
     char buffer[1024];
     bzero(buffer, sizeof(buffer));
@@ -125,7 +125,7 @@ int GameServerHandleTCP(GameServer *gs, int cfd) {
     int n;
 
     n = read(cfd, &req.cfd, REQ_UID_SIZE);
-    if (n == 0) {
+    if (n <= 0) {
         printf("Closing socket %d\n", cfd);
         close(cfd);
         FD_CLR(cfd, &gs->m_rset);
@@ -218,6 +218,8 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
     sendResponse(&res, req->cfd);
 
     puts("Ruleset confirmation sent");
+
+    return 0;
 }
 
 int MakeNewGame(GameServer *gs, int index, int game_type, Client* client) {
