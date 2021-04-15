@@ -10,7 +10,7 @@ int GameServerInit(GameServer *gs, int ver, int port) {
     gs->games = calloc(sizeof(Game *), GAMES_COUNT_INC);
     gs->port = port;
     int x;
-    gs->ptcl_version = 1;
+    gs->ptcl_version = ver;
     if ((x = socket(AF_INET, SOCK_STREAM, 0)) == -1){
         perror("initGameServer -> socket() error");
         return -1;
@@ -129,17 +129,24 @@ int GameServerHandleTCP(GameServer *gs, int cfd) {
         printf("Closing socket %d\n", cfd);
         close(cfd);
         FD_CLR(cfd, &gs->m_rset);
+        // TODO: Remove the client from its game
         return 0;
     }
     n = read(cfd, &req.type, REQ_TYPE_SIZE);
     n = read(cfd, &req.context, REQ_CONTEXT_SIZE);
     n = read(cfd, &req.plen, REQ_LEN_SIZE);
-    n = read(cfd, &req.payload, req.plen);
+    if (req.plen > 0) {
+        req.payload = malloc(sizeof(uint8_t) * req.plen);
+        for (size_t i = 0; i < req.plen; i++) {
+            n = read(cfd, &req.payload[i], 1);
+        }
+    }
 
     if (req.cfd == 0) {
         req.cfd = cfd;
     }
     GameServerHandleRequest(gs, &req);
+    free(req.payload);
 
     return 0;
 }
@@ -150,8 +157,11 @@ int GameServerHandleRequest(GameServer *gs, Request *req) {
     printf("Type: %d\n", req->type);
     printf("Context: %d\n", req->context);
     printf("Payload Length: %d\n", req->plen);
-    printf("Payload: %d\n", req->payload);
-    puts("");
+    printf("Payload: ");
+    for (size_t i = 0; i < req->plen; i++) {
+        printf("%u, ", req->payload[i]);
+    }
+    puts("\n");
 
     if (req->type == REQ_TYPE_CONFIRM) {
         HandleConfirm(gs, req);
@@ -175,8 +185,8 @@ int HandleConfirm(GameServer *gs, Request *req) {
 int HandleConfirmRuleset(GameServer *gs, Request *req) {
     int version;
     int game_type;
-    version = (req->payload >> 8) & 0x0F;
-    game_type = req->payload & 0x0F;
+    version = req->payload[0];
+    game_type = req->payload[1];
     Client *client = malloc(sizeof(Client));
 
     printf("Protocol Version: %d\n", version);
@@ -258,6 +268,7 @@ int FindAvailableGame(GameServer *gs, int game_type, Client *client) {
     }
 
     puts("No game found");
+    // If no empty game was found
     if (emptyGameIndex == -1) {
         puts("Could not locate empty game. Expanding Games array");
         emptyGameIndex = gs->num_games;

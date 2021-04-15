@@ -36,7 +36,6 @@
 #define RES_SUCCESS_RULESET 1
 
 typedef struct {
-    uint32_t cfd;
     uint8_t type;
     uint8_t context;
     uint8_t plen;

@@ -3,18 +3,14 @@
 #define MAXLINE 1024
 #define PTCL_VERSION 1
 
-static int max(int x, int y) {
-	if (x > y) {
-		return x;
-	} else {
-		return y;
-	}
-}
-
 int main() {
 	GameServer *gs = malloc(sizeof(GameServer));
 
-	GameServerInit(gs, PTCL_VERSION, PORT);
+	if (GameServerInit(gs, PTCL_VERSION, PORT) == -1) {
+		puts("Could not initialize game server");
+		free(gs);
+		exit(0);
+	}
 	GameServerLoop(gs);
 	
 	free(gs);

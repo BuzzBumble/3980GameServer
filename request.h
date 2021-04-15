@@ -32,7 +32,7 @@ typedef struct {
     uint8_t type;
     uint8_t context;
     uint8_t plen;
-    uint32_t payload;
+    uint8_t *payload;
 } Request;
 
 #endif
