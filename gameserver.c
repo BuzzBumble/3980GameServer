@@ -22,7 +22,6 @@ int GameServerInit(GameServer *gs, int ver, int port) {
 
 	bzero(&(gs->servaddr), sizeof(gs->servaddr));
 	gs->servaddr.sin_family = AF_INET;
-	gs->servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	gs->servaddr.sin_port = htons(gs->port);
     
     if ((x = bind(gs->tcpfd, (struct sockaddr *)&(gs->servaddr), sizeof(gs->servaddr))) == -1) {
@@ -127,11 +126,7 @@ int GameServerHandleTCP(GameServer *gs, int cfd) {
     n = read(cfd, &req.cfd, REQ_UID_SIZE);
     req.cfd = ntohl(req.cfd);
     if (n <= 0) {
-        printf("Closing socket %d\n", cfd);
-        close(cfd);
-        FD_CLR(cfd, &gs->m_rset);
-        // TODO: Remove the client from its game
-        // and destroy game if it has no clients left
+        RemoveClient(gs, cfd);
         return 0;
     }
     n = read(cfd, &req.type, REQ_TYPE_SIZE);
@@ -212,7 +207,14 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
 
     printf("New Client's game: %d\n", client->game_id);
     int numClients = gs->games[client->game_id]->num_clients;
-    printf("Clients in this game: %d\n", numClients);
+    printf("Clients in this game: ");
+    Game *game = gs->games[client->game_id];
+    for (size_t i = 0; i < game->max_clients; i++) {
+        if (game->clients[i] != 0)
+            printf("%u, ", game->clients[i]->fd);
+    }
+    puts("");
+
 
     Response res = {};
     res.type = RES_TYPE_SUCCESS;
@@ -285,4 +287,32 @@ int FindAvailableGame(GameServer *gs, int game_type, Client *client) {
     }
 
     return MakeNewGame(gs, emptyGameIndex, game_type, client);
+}
+
+int RemoveClient(GameServer *gs, int cfd) {
+    puts("Removing Client...");
+    printf("Closing socket %d\n", cfd);
+    close(cfd);
+    FD_CLR(cfd, &gs->m_rset);
+    int index;
+    for (size_t i = 0; i < gs->num_games; i++) {
+        if (gs->games[i] != 0) {
+            if ((index = GameClientIndex(gs->games[i], cfd)) != -1) {
+                int rem = GameRemoveClientAtIndex(gs->games[i], index);
+                printf("Clients remaining in Game %d: ", i);
+                for (size_t j = 0; j < gs->games[i]->max_clients; j++) {
+                    if (gs->games[i]->clients[j] != 0)
+                        printf("%u, ", gs->games[i]->clients[j]->fd);
+                }
+                puts("");
+                if (rem == 0) {
+                    puts("Destroying Game");
+                    free(gs->games[i]);
+                    gs->games[i] = 0;
+                }
+                return 0;
+            }
+        }
+    }
+    return -1;
 }

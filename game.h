@@ -41,5 +41,7 @@ int GameInitRPS(Game *game, int game_id);
 // 
 // RETURNS: Number of players in game or -1
 int GameAddClient(Game *game, Client *client);
+int GameClientIndex(Game *game, int cfd);
+int GameRemoveClientAtIndex(Game *game, int index);
 
 #endif

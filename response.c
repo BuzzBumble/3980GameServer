@@ -31,10 +31,10 @@ int parseIntoPayload(Response *res, u_int32_t value) {
     byte = value & BYTE_MASK;
     res->payload[i] = byte;
 
-    printf("BYTES: ");
+    printf("RESPONSE PAYLOAD: ");
     for (i = 0; i < res->plen; i++) {
         printf("%u, ", res->payload[i]);
     }
     puts("");
-    return 0;
+    return res->plen;
 }
