@@ -25,6 +25,9 @@
 #define RPS_MOVE_PAPER 2
 #define RPS_MOVE_SCISSORS 3
 
+#define TTT_TEAM_X 1
+#define TTT_TEAM_O 2
+
 enum GameState {
     Error = -1,
     Initializing = 0,
@@ -38,7 +41,10 @@ enum GameState {
 enum ClientState {
     ClientConnected = 0,
     ClientCanMove,
-    ClientHasMoved
+    ClientAwaitingMove,
+    ClientHasMoved,
+    ClientWon,
+    ClientLost
 };
 
 typedef struct {
@@ -46,6 +52,7 @@ typedef struct {
     int game_id;
     int state;
     int move;
+    int team;
 } Client;
 
 typedef struct {
@@ -55,6 +62,9 @@ typedef struct {
     Client **clients;
     int num_clients;
     int max_clients;
+    int moveCount;
+    int board[9];
+    int lastMove;
 } Game;
 
 int GameInitTTT(Game *game, int game_id);
@@ -70,5 +80,10 @@ int RPS_HandleMove(Game *game, Request *req);
 int RPS_CheckMoves(Game *game);
 int RPS_GameAwaitMove(Game *game);
 static int RPS_CompareMoves(int a, int b);
+
+int TTT_GameStart(Game *game);
+int TTT_HandleMove(Game *game, Request *req);
+int TTT_CheckMoves(Game *game);
+static int TTT_CheckWin(int board[9]);
 
 #endif

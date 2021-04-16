@@ -16,9 +16,9 @@ int sendResponse(Response *res, int cfd) {
     write(cfd, &res->plen, RES_LEN_SIZE);
     if (res->plen > 0) {
         write(cfd, res->payload, res->plen);
+        free(res->payload);
     }
 
-    free(res->payload);
     return 0;
 }
 
@@ -33,8 +33,6 @@ int parseIntoPayload(Response *res, uint32_t value) {
     }
     if (res->plen > 2) {
         value = htonl(value);
-    } else {
-        value = htons(value);
     }
     uint8_t byte;
     size_t i;

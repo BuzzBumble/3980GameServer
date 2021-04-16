@@ -206,6 +206,9 @@ int HandleMove(GameServer *gs, Request *req) {
 
     switch (game->type) {
         case GAME_TYPE_TTT:
+            if (TTT_HandleMove(game, req) == 1) {
+                DestroyGame(gs, game);
+            }
             break;
         case GAME_TYPE_RPS:
             if (RPS_HandleMove(game, req) == 1) {

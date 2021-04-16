@@ -1,5 +1,5 @@
 #include "gameserver.h"
-#define PORT 5000
+#define PORT 2034
 #define MAXLINE 1024
 #define PTCL_VERSION 1
 
