@@ -46,5 +46,6 @@ int RemoveClient(GameServer *gs, int cfd);
 int HandleGameAction(GameServer *gs, Request *req);
 int HandleMove(GameServer *gs, Request *req);
 Game *FindGameWithClient(GameServer *gs, uint32_t cfd);
+int DestroyGame(GameServer *gs, Game* game);
 
 #endif

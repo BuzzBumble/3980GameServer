@@ -208,7 +208,9 @@ int HandleMove(GameServer *gs, Request *req) {
         case GAME_TYPE_TTT:
             break;
         case GAME_TYPE_RPS:
-            RPS_HandleMove(game, req);
+            if (RPS_HandleMove(game, req) == 1) {
+                DestroyGame(gs, game);
+            }
             break;
         default:
             break;
@@ -362,6 +364,21 @@ int RemoveClient(GameServer *gs, int cfd) {
         return 0;
     }
     return -1;
+}
+
+int DestroyGame(GameServer *gs, Game* game) {
+    printf("Destroying Game %d\n", game->id);
+    for (size_t i = 0; i < game->max_clients; i++) {
+        if (game->clients[i] != 0) {
+            close(game->clients[i]->fd);
+            FD_CLR(game->clients[i]->fd, &gs->m_rset);
+            free(game->clients[i]);
+        }
+    }
+    free(game->clients);
+    gs->games[game->id] = 0;
+    free(game);
+    return 0;
 }
 
 Game *FindGameWithClient(GameServer *gs, uint32_t cfd) {

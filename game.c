@@ -3,7 +3,7 @@
 int GameInitTTT(Game *game, int game_id) {
     game->state = Initializing;
     game->type = GAME_TYPE_TTT;
-    game->clients = (Client **)malloc(MAX_PLAYERS_TTT * sizeof(Client *));
+    game->clients = (Client **)calloc(sizeof(Client *), MAX_PLAYERS_TTT);
     game->num_clients = 0;
     game->max_clients = MAX_PLAYERS_TTT;
     game->id = game_id;
@@ -14,7 +14,7 @@ int GameInitTTT(Game *game, int game_id) {
 int GameInitRPS(Game *game, int game_id) {
     game->state = Initializing;
     game->type = GAME_TYPE_RPS;
-    game->clients = (Client **)malloc(MAX_PLAYERS_RPS * sizeof(Client *));
+    game->clients = (Client **)calloc(sizeof(Client *), MAX_PLAYERS_RPS);
     game->num_clients = 0;
     game->max_clients = MAX_PLAYERS_RPS;
     game->id = game_id;
@@ -69,8 +69,23 @@ int GameClientIndex(Game *game, int cfd) {
 
 int GameRemoveClientAtIndex(Game *game, int index) {
     printf("Removing client %d from game %d\n", game->clients[index]->fd, game->id);
+    free(game->clients[index]);
     game->clients[index] = 0;
     game->num_clients--;
+
+    game->state = AwaitingPlayers;
+
+    Response res = {};
+    res.type = RES_TYPE_UPDATE;
+    res.context = RES_UPDATE_DC;
+    res.plen = 0;
+
+    for (size_t i = 0; i < game->max_clients; i++) {
+        if (game->clients[i] != 0) {
+            game->clients[i]->move = -1;
+            sendResponse(&res, game->clients[i]->fd);
+        }
+    }
 
     return game->num_clients;
 }
@@ -144,17 +159,27 @@ int RPS_HandleMove(Game *game, Request *req) {
     }
 
     game->state = GameOver;
-    RPS_CheckMoves(game);
+
+    if (RPS_CheckMoves(game) == 0) {
+        return 1;
+    } 
 
     return 0;
 }
 
 int RPS_CheckMoves(Game *game) {
-    Response res = {};
-    res.type = RES_TYPE_UPDATE;
-    res.context = RES_UPDATE_END;
-    res.plen = RES_PAYLOAD_END_SIZE;
-    res.payload = malloc(res.plen * sizeof(uint8_t));
+    Response resA = {};
+    resA.type = RES_TYPE_UPDATE;
+    resA.context = RES_UPDATE_END;
+    resA.plen = RES_PAYLOAD_END_SIZE;
+    resA.payload = malloc(resA.plen * sizeof(uint8_t));
+
+    Response resB = {};
+    resB.type = RES_TYPE_UPDATE;
+    resB.context = RES_UPDATE_END;
+    resB.plen = RES_PAYLOAD_END_SIZE;
+    resB.payload = malloc(resB.plen * sizeof(uint8_t));
+
     if (game->state != GameOver) {
         return -1;
     }
@@ -183,12 +208,10 @@ int RPS_CheckMoves(Game *game) {
     payload_a += move_b;
     payload_b += move_a;
 
-    parseIntoPayload(&res, payload_a);
-    sendResponse(&res, clientA->fd);
-    parseIntoPayload(&res, payload_b);
-    sendResponse(&res, clientB->fd);
-
-    free(res.payload);
+    parseIntoPayload(&resA, payload_a);
+    sendResponse(&resA, clientA->fd);
+    parseIntoPayload(&resB, payload_b);
+    sendResponse(&resB, clientB->fd);
 
     return 0;
 }
