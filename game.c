@@ -440,7 +440,7 @@ static int TTT_CheckWin(int board[9]) {
         }
     }
     if (board[8] != 0) {
-        if (board[8] == board[5] && board[9] == board[2]) {
+        if (board[8] == board[5] && board[8] == board[2]) {
             return board[8];
         }
         if (board[8] == board[7] && board[8] == board[6]) {
