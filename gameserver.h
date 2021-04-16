@@ -43,5 +43,8 @@ int HandleConfirmRuleset(GameServer *gs, Request *req);
 int MakeNewGame(GameServer *gs, int index, int game_type, Client *client);
 int FindAvailableGame(GameServer *gs, int game_type, Client *client);
 int RemoveClient(GameServer *gs, int cfd);
+int HandleGameAction(GameServer *gs, Request *req);
+int HandleMove(GameServer *gs, Request *req);
+Game *FindGameWithClient(GameServer *gs, uint32_t cfd);
 
 #endif

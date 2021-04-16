@@ -158,8 +158,15 @@ int GameServerHandleRequest(GameServer *gs, Request *req) {
     }
     puts("\n");
 
-    if (req->type == REQ_TYPE_CONFIRM) {
-        HandleConfirm(gs, req);
+    switch (req->type) {
+        case REQ_TYPE_CONFIRM:
+            HandleConfirm(gs, req);
+            break;
+        case REQ_TYPE_GAME:
+            HandleGameAction(gs, req);
+            break;
+        default:
+            break;
     }
 
     return 0;
@@ -175,6 +182,37 @@ int HandleConfirm(GameServer *gs, Request *req) {
             break;
     }
     return 0;
+}
+
+int HandleGameAction(GameServer *gs, Request *req) {
+    switch (req->context) {
+        case REQ_GAME_MOVE: ;
+            HandleMove(gs, req);
+            break;
+        default:
+            puts("Unrecognized Confirmation Context");
+            break;
+    }
+    return 0;
+}
+
+int HandleMove(GameServer *gs, Request *req) {
+    uint32_t cfd = req->cfd;
+    Game *game = FindGameWithClient(gs, cfd);
+    if (game == 0) {
+        puts("Could not find game");
+        return -1;
+    }
+
+    switch (game->type) {
+        case GAME_TYPE_TTT:
+            break;
+        case GAME_TYPE_RPS:
+            RPS_HandleMove(game, req);
+            break;
+        default:
+            break;
+    }
 }
 
 int HandleConfirmRuleset(GameServer *gs, Request *req) {
@@ -203,19 +241,6 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
     }
     puts("");
 
-    FindAvailableGame(gs, game_type, client);
-
-    printf("New Client's game: %d\n", client->game_id);
-    int numClients = gs->games[client->game_id]->num_clients;
-    printf("Clients in this game: ");
-    Game *game = gs->games[client->game_id];
-    for (size_t i = 0; i < game->max_clients; i++) {
-        if (game->clients[i] != 0)
-            printf("%u, ", game->clients[i]->fd);
-    }
-    puts("");
-
-
     Response res = {};
     res.type = RES_TYPE_SUCCESS;
     res.context = RES_SUCCESS_RULESET;
@@ -227,6 +252,20 @@ int HandleConfirmRuleset(GameServer *gs, Request *req) {
 
     puts("Ruleset confirmation sent");
 
+    // Then put the client in a game
+    FindAvailableGame(gs, game_type, client);
+
+    // ALL JUST FOR PRINTING THINGS
+    printf("New Client's game: %d\n", client->game_id);
+    int numClients = gs->games[client->game_id]->num_clients;
+    printf("Clients in this game: ");
+    Game *game = gs->games[client->game_id];
+    for (size_t i = 0; i < game->max_clients; i++) {
+        if (game->clients[i] != 0)
+            printf("%u, ", game->clients[i]->fd);
+    }
+    puts("");
+    // END PRINTING THINGS
     return 0;
 }
 
@@ -271,6 +310,11 @@ int FindAvailableGame(GameServer *gs, int game_type, Client *client) {
             if (GameAddClient(game, client) == -1) {
                 found = 0;
             } else {
+                if (game->state == Starting) {
+                    if (game->type == GAME_TYPE_RPS) {
+                        int x = RPS_GameStart(game);
+                    }
+                }
                 return i;
             }
         }
@@ -295,24 +339,39 @@ int RemoveClient(GameServer *gs, int cfd) {
     close(cfd);
     FD_CLR(cfd, &gs->m_rset);
     int index;
+
+    Game *game = FindGameWithClient(gs, cfd);
+    if (game == 0) {
+        puts("Could not find a game with this client");
+        return -1;
+    }
+
+    if ((index = GameClientIndex(game, cfd)) != -1) {
+        int rem = GameRemoveClientAtIndex(game, index);
+        printf("Clients remaining in Game %d: ", game->num_clients);
+        for (size_t j = 0; j < game->max_clients; j++) {
+            if (game->clients[j] != 0)
+                printf("%u, ", game->clients[j]->fd);
+        }
+        puts("");
+        if (rem == 0) {
+            puts("Destroying Game");
+            gs->games[game->id] = 0;
+            free(game);
+        }
+        return 0;
+    }
+    return -1;
+}
+
+Game *FindGameWithClient(GameServer *gs, uint32_t cfd) {
+    int index;
     for (size_t i = 0; i < gs->num_games; i++) {
         if (gs->games[i] != 0) {
             if ((index = GameClientIndex(gs->games[i], cfd)) != -1) {
-                int rem = GameRemoveClientAtIndex(gs->games[i], index);
-                printf("Clients remaining in Game %d: ", i);
-                for (size_t j = 0; j < gs->games[i]->max_clients; j++) {
-                    if (gs->games[i]->clients[j] != 0)
-                        printf("%u, ", gs->games[i]->clients[j]->fd);
-                }
-                puts("");
-                if (rem == 0) {
-                    puts("Destroying Game");
-                    free(gs->games[i]);
-                    gs->games[i] = 0;
-                }
-                return 0;
+                return gs->games[i];
             }
         }
     }
-    return -1;
+    return 0;
 }
