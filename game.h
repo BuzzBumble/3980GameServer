@@ -43,8 +43,6 @@ enum ClientState {
     ClientCanMove,
     ClientAwaitingMove,
     ClientHasMoved,
-    ClientWon,
-    ClientLost
 };
 
 typedef struct {
