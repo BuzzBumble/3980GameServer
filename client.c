@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
-#define PORT 5000
+#define PORT 2034
 #define MAXLINE 1024
 int main()
 {
@@ -26,11 +26,16 @@ int main()
     // Filling server information
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(PORT);
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    if(inet_pton(AF_INET, "206.116.216.22", &servaddr.sin_addr)<=0)
+    {
+        perror("inet_pton()");
+        return 1;
+    }
   
     if (connect(sockfd, (struct sockaddr*)&servaddr, 
                              sizeof(servaddr)) < 0) {
-        printf("\n Error : Connect Failed \n");
+        perror("connect()");
         exit(1);
     }
 

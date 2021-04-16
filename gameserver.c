@@ -21,8 +21,12 @@ int GameServerInit(GameServer *gs, int ver, int port) {
         &reuse_addr, sizeof(reuse_addr));
 
 	bzero(&(gs->servaddr), sizeof(gs->servaddr));
+    gs->servaddr.sin_addr.s_addr = inet_addr(INADDR_ANY);
 	gs->servaddr.sin_family = AF_INET;
 	gs->servaddr.sin_port = htons(gs->port);
+
+    struct in_addr in = gs->servaddr.sin_addr;
+    printf("%s\n", inet_ntoa(in));
     
     if ((x = bind(gs->tcpfd, (struct sockaddr *)&(gs->servaddr), sizeof(gs->servaddr))) == -1) {
         perror("initGameServer -> bind() error");
