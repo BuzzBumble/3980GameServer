@@ -21,12 +21,9 @@ int GameServerInit(GameServer *gs, int ver, int port) {
         &reuse_addr, sizeof(reuse_addr));
 
 	bzero(&(gs->servaddr), sizeof(gs->servaddr));
-    gs->servaddr.sin_addr.s_addr = inet_addr(INADDR_ANY);
+    gs->servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	gs->servaddr.sin_family = AF_INET;
 	gs->servaddr.sin_port = htons(gs->port);
-
-    struct in_addr in = gs->servaddr.sin_addr;
-    printf("%s\n", inet_ntoa(in));
     
     if ((x = bind(gs->tcpfd, (struct sockaddr *)&(gs->servaddr), sizeof(gs->servaddr))) == -1) {
         perror("initGameServer -> bind() error");
@@ -128,7 +125,7 @@ int GameServerHandleTCP(GameServer *gs, int cfd) {
     int n;
 
     n = read(cfd, &req.cfd, REQ_UID_SIZE);
-    req.cfd = ntohl(req.cfd);
+    req.cfd = htonl(req.cfd);
     if (n <= 0) {
         RemoveClient(gs, cfd);
         return 0;

@@ -32,7 +32,7 @@ int parseIntoPayload(Response *res, uint32_t value) {
         return 0;
     }
     if (res->plen > 2) {
-        value = htonl(value);
+        // value = htonl(value);
     }
     uint8_t byte;
     size_t i;

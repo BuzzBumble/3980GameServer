@@ -25,9 +25,9 @@ int main()
   
     // Filling server information
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(PORT);
+    servaddr.sin_port = PORT;
 
-    if(inet_pton(AF_INET, "206.116.216.22", &servaddr.sin_addr)<=0)
+    if(inet_pton(AF_INET, "192.168.1.72", &servaddr.sin_addr)<=0)
     {
         perror("inet_pton()");
         return 1;
